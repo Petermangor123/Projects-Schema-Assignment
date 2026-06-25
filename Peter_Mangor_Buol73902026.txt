@@ -1,0 +1,737 @@
+Name: Peter Mangor Buol
+Student ID: 73902026
+Cohort: B
+
+Database Systems
+Chapter 7 – Case Study 2 (Projects Schema)
+
+
+============================================================
+Exercise 7.24: Create the Projects Schema
+============================================================
+
+mysql> use ProjectDB;
+Database changed
+mysql> show tables;
++---------------------+
+| Tables_in_projectdb |
++---------------------+
+| department          |
+| employee            |
++---------------------+
+2 rows in set (0.02 sec)
+
+mysql> drop table employee;
+Query OK, 0 rows affected (0.03 sec)
+
+mysql> show tables;
++---------------------+
+| Tables_in_projectdb |
++---------------------+
+| department          |
++---------------------+
+1 row in set (0.00 sec)
+
+mysql> create table employee (
+    -> empno int primary key,
+    -> fname varchar(30) not null,
+    -> lname varchar(30) not null,
+    -> address varchar(100),
+    -> dob date,
+    -> sex char(1)
+    -> check (sex in ('M', 'F')),
+    -> position varchar(30)
+    -> check (position in (
+    -> 'Manager',
+    -> 'Team Leader',
+    -> 'Analyst',
+    -> 'Software Developer'
+    -> )),
+    -> deptno int,
+    -> constraint fk_employee_department
+    -> foreign key (deptno)
+    -> references department(deptno)
+    -> );
+Query OK, 0 rows affected (0.06 sec)
+
+mysql> alter table department
+    -> add constraint FK_Department_Manager
+    -> foreign key (mgrEmpNo)
+    -> references employee(empno);
+Query OK, 0 rows affected (0.19 sec)
+Records: 0  Duplicates: 0  Warnings: 0
+
+mysql> create table Project (
+    -> projectNo int primary key,
+    -> projectName varchar(50) not null,
+    -> deptNo int not null,
+    -> constraint FK_Project_Department
+    -> foreign key(deptNo)
+    -> references Department(deptNo)
+    -> );
+Query OK, 0 rows affected (0.07 sec)
+
+mysql> create table workOn(
+    -> empno int,
+    -> projNo int,
+    -> dateWorked date,
+    -> hourWorked int
+    -> check(hoursWorked between 0 and 40),
+    -> primary key(empno, projNo, dateWorked),
+    -> constraint FK_WorksOn_Employee
+    -> foreign key(empno)
+    -> references Employee(empno),
+    -> constraint FK_WorksOn_Project
+    -> foreign key(projNo)
+    -> references Project(projNo)
+    -> );
+ERROR 3813 (HY000): Column check constraint 'workon_chk_1' references other column.
+mysql> create table workOn (
+    -> empno int,
+    -> projNo int,
+    -> dateWorked date,
+    -> hourWorked int,
+    -> check (hourWorked between 0 and 40),
+    -> primary key (empno, projNo, dateWorked),
+    -> constraint fk_workson_employee
+    -> foreign key (empno)
+    -> references employee(empno),
+    -> constraint fk_workson_project
+    -> foreign key (projNo)
+    -> references project(projNo)
+    -> );
+ERROR 3734 (HY000): Failed to add the foreign key constraint. Missing column 'projNo' for constraint 'fk_workson_project' in the referenced table 'project'
+mysql> describe Project;
++-------------+-------------+------+-----+---------+-------+
+| Field       | Type        | Null | Key | Default | Extra |
++-------------+-------------+------+-----+---------+-------+
+| projectNo   | int         | NO   | PRI | NULL    |       |
+| projectName | varchar(50) | NO   |     | NULL    |       |
+| deptNo      | int         | NO   | MUL | NULL    |       |
++-------------+-------------+------+-----+---------+-------+
+3 rows in set (0.01 sec)
+
+mysql> ^C
+mysql> create table workOn (
+    -> empno int,
+    -> projectNo int,
+    -> dateWorked date,
+    -> hourWorked int,
+    -> check (hourWorked between 0 and 40),
+    -> primary key (empno, projectNo, dateWorked),
+    -> constraint fk_workson_employee
+    -> foreign key (empno)
+    -> references employee(empno),
+    -> constraint fk_workson_project
+    -> foreign key (projectNo)
+    -> references project(projectNo)
+    -> );
+Query OK, 0 rows affected (0.07 sec)
+
+mysql> describe department;
++----------+-------------+------+-----+---------+-------+
+| Field    | Type        | Null | Key | Default | Extra |
++----------+-------------+------+-----+---------+-------+
+| deptNo   | int         | NO   | PRI | NULL    |       |
+| deptName | varchar(50) | NO   |     | NULL    |       |
+| mgrEmpNo | int         | YES  | MUL | NULL    |       |
++----------+-------------+------+-----+---------+-------+
+3 rows in set (0.00 sec)
+
+============================================================
+Exercise 7.25 CREATE VIEW female_manager_projects
+============================================================
+
+mysql> create view female_manager_projects as
+    -> select
+    ->     p.projectNo,
+    ->     p.projectName,
+    ->     d.deptNo,
+    ->     d.deptName,
+    ->     e.empNo as managerID,
+    ->     e.fName,
+    ->     e.lName
+    -> from project p
+    -> join department d
+    ->     on p.deptNo = d.deptNo
+    -> join employee e
+    ->     on d.mgrEmpNo = e.empNo
+    -> where e.sex = 'F'
+    -> order by p.projectNo;
+Query OK, 0 rows affected (0.02 sec)
+
+mysql> select * from Female_Manager_Projects;
+Empty set (0.00 sec)
+
+mysql> select * from Department;
+Empty set (0.00 sec)
+
+mysql> select * from employee;
+Empty set (0.00 sec)
+
+mysql> select * from Project;
+Empty set (0.00 sec)
+
+mysql> INSERT INTO Department (deptNo, deptName)
+    -> VALUES
+    -> (1, 'Information Technology'),
+    -> (2, 'Finance'),
+    -> (3, 'Human Resources'),
+    -> (4, 'Marketing'),
+    -> (5, 'Operations');
+Query OK, 5 rows affected (0.01 sec)
+Records: 5  Duplicates: 0  Warnings: 0
+
+mysql> INSERT INTO Employee
+    -> (empNo, fName, lName, address, DOB, sex, position, deptNo)
+    -> VALUES
+    -> (101, 'Mary', 'Mensah', 'Accra', '1990-03-15', 'F', 'Manager', 1),
+    -> (102, 'John', 'Doe', 'Kumasi', '1992-07-20', 'M', 'Analyst', 1),
+    -> (103, 'Linda', 'Boateng', 'Takoradi', '1989-05-18', 'F', 'Manager', 2),
+    -> (104, 'Peter', 'Owusu', 'Cape Coast', '1993-08-12', 'M', 'Team Leader', 2),
+    -> (105, 'Grace', 'Asante', 'Sunyani', '1991-01-30', 'F', 'Manager', 3),
+    -> (106, 'Michael', 'Amoah', 'Tamale', '1994-04-22', 'M', 'Software Developer', 3),
+    -> (107, 'Sarah', 'Antwi', 'Ho', '1990-12-01', 'F', 'Manager', 4),
+    -> (108, 'David', 'Mensah', 'Koforidua', '1995-07-10', 'M', 'Analyst', 4),
+    -> (109, 'Esther', 'Nyarko', 'Wa', '1988-09-14', 'F', 'Manager', 5),
+    -> (110, 'Daniel', 'Boadu', 'Bolgatanga', '1996-02-05', 'M', 'Software Developer', 5);
+Query OK, 10 rows affected (0.01 sec)
+Records: 10  Duplicates: 0  Warnings: 0
+
+mysql> UPDATE Department SET mgrEmpNo = 101 WHERE deptNo = 1;
+Query OK, 1 row affected (0.01 sec)
+Rows matched: 1  Changed: 1  Warnings: 0
+
+mysql> UPDATE Department SET mgrEmpNo = 103 WHERE deptNo = 2;
+Query OK, 1 row affected (0.01 sec)
+Rows matched: 1  Changed: 1  Warnings: 0
+
+mysql> UPDATE Department SET mgrEmpNo = 105 WHERE deptNo = 3;
+Query OK, 1 row affected (0.01 sec)
+Rows matched: 1  Changed: 1  Warnings: 0
+
+mysql> UPDATE Department SET mgrEmpNo = 107 WHERE deptNo = 4;
+Query OK, 1 row affected (0.01 sec)
+Rows matched: 1  Changed: 1  Warnings: 0
+
+mysql> UPDATE Department SET mgrEmpNo = 109 WHERE deptNo = 5;
+Query OK, 1 row affected (0.01 sec)
+Rows matched: 1  Changed: 1  Warnings: 0
+
+mysql> INSERT INTO Project (projNo, projName, deptNo)
+    -> VALUES
+    -> (1001, 'Student Portal', 1),
+    -> (1002, 'Payroll System', 2),
+    -> (1003, 'Recruitment System', 3),
+    -> (1004, 'Digital Marketing Platform', 4),
+    -> (1005, 'Inventory Management System', 5);
+ERROR 1054 (42S22): Unknown column 'projNo' in 'field list'
+mysql> describe project;
++-------------+-------------+------+-----+---------+-------+
+| Field       | Type        | Null | Key | Default | Extra |
++-------------+-------------+------+-----+---------+-------+
+| projectNo   | int         | NO   | PRI | NULL    |       |
+| projectName | varchar(50) | NO   |     | NULL    |       |
+| deptNo      | int         | NO   | MUL | NULL    |       |
++-------------+-------------+------+-----+---------+-------+
+3 rows in set (0.00 sec)
+
+mysql> INSERT INTO Project (projectNo, projectName, deptNo)
+    -> VALUES
+    -> (1001, 'Student Portal', 1),
+    -> (1002, 'Payroll System', 2),
+    -> (1003, 'Recruitment System', 3),
+    -> (1004, 'Digital Marketing Platform', 4),
+    -> (1005, 'Inventory Management System', 5);
+Query OK, 5 rows affected (0.01 sec)
+Records: 5  Duplicates: 0  Warnings: 0
+
+mysql> drop view if exists Female_Manager_Projects;
+Query OK, 0 rows affected (0.01 sec)
+
+============================================================
+Exercise 7.26
+============================================================
+
+mysql> CREATE VIEW Female_Manager_Projects AS
+    -> SELECT
+    ->     P.projectNo,
+    ->     P.projectName,
+    ->     D.deptNo,
+    ->     D.deptName,
+    ->     E.empNo AS ManagerID,
+    ->     E.fName,
+    ->     E.lName
+    -> FROM Project P
+    -> JOIN Department D
+    ->     ON P.deptNo = D.deptNo
+    -> JOIN Employee E
+    ->     ON D.mgrEmpNo = E.empNo
+    -> WHERE E.sex = 'F'
+    -> ORDER BY P.projectNo;
+Query OK, 0 rows affected (0.01 sec)
+
+mysql> SHOW CREATE TABLE Employee;
++----------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Table    | Create Table                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
++----------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Employee | CREATE TABLE `employee` (
+  `empno` int NOT NULL,
+  `fname` varchar(30) NOT NULL,
+  `lname` varchar(30) NOT NULL,
+  `address` varchar(100) DEFAULT NULL,
+  `dob` date DEFAULT NULL,
+  `sex` char(1) DEFAULT NULL,
+  `position` varchar(30) DEFAULT NULL,
+  `deptno` int DEFAULT NULL,
+  PRIMARY KEY (`empno`),
+  KEY `fk_employee_department` (`deptno`),
+  CONSTRAINT `fk_employee_department` FOREIGN KEY (`deptno`) REFERENCES `department` (`deptNo`),
+  CONSTRAINT `employee_chk_1` CHECK ((`sex` in (_utf8mb4'M',_utf8mb4'F'))),
+  CONSTRAINT `employee_chk_2` CHECK ((`position` in (_utf8mb4'Manager',_utf8mb4'Team Leader',_utf8mb4'Analyst',_utf8mb4'Software Developer')))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci |
++----------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+1 row in set (0.00 sec)
+
+mysql> SHOW CREATE TABLE Department;
++------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Table      | Create Table                                                                                                                                                                                                                                                                                                                                                  |
++------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Department | CREATE TABLE `department` (
+  `deptNo` int NOT NULL,
+  `deptName` varchar(50) NOT NULL,
+  `mgrEmpNo` int DEFAULT NULL,
+  PRIMARY KEY (`deptNo`),
+  KEY `FK_Department_Manager` (`mgrEmpNo`),
+  CONSTRAINT `FK_Department_Manager` FOREIGN KEY (`mgrEmpNo`) REFERENCES `employee` (`empno`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci |
++------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+1 row in set (0.00 sec)
+
+mysql> SHOW CREATE TABLE WorksOn;
+ERROR 1146 (42S02): Table 'projectdb.workson' doesn't exist
+mysql> show tables;
++-------------------------+
+| Tables_in_projectdb     |
++-------------------------+
+| department              |
+| employee                |
+| female_manager_projects |
+| project                 |
+| workon                  |
++-------------------------+
+5 rows in set (0.00 sec)
+
+mysql> describe project;
++-------------+-------------+------+-----+---------+-------+
+| Field       | Type        | Null | Key | Default | Extra |
++-------------+-------------+------+-----+---------+-------+
+| projectNo   | int         | NO   | PRI | NULL    |       |
+| projectName | varchar(50) | NO   |     | NULL    |       |
+| deptNo      | int         | NO   | MUL | NULL    |       |
++-------------+-------------+------+-----+---------+-------+
+3 rows in set (0.00 sec)
+
+mysql> describe workOn;
++------------+------+------+-----+---------+-------+
+| Field      | Type | Null | Key | Default | Extra |
++------------+------+------+-----+---------+-------+
+| empno      | int  | NO   | PRI | NULL    |       |
+| projectNo  | int  | NO   | PRI | NULL    |       |
+| dateWorked | date | NO   | PRI | NULL    |       |
+| hourWorked | int  | YES  |     | NULL    |       |
++------------+------+------+-----+---------+-------+
+4 rows in set (0.00 sec)
+
+mysql> select * from project;
++-----------+-----------------------------+--------+
+| projectNo | projectName                 | deptNo |
++-----------+-----------------------------+--------+
+|      1001 | Student Portal              |      1 |
+|      1002 | Payroll System              |      2 |
+|      1003 | Recruitment System          |      3 |
+|      1004 | Digital Marketing Platform  |      4 |
+|      1005 | Inventory Management System |      5 |
++-----------+-----------------------------+--------+
+5 rows in set (0.00 sec)
+
+mysql> select * from workon;
+Empty set (0.00 sec)
+
+mysql> INSERT INTO workOn
+    -> (empNo, projectNo, dateWorked, hourWorked)
+    -> VALUES
+    -> (101,1001,'2026-06-20',8),
+    -> (102,1001,'2026-06-20',6),
+    -> (103,1002,'2026-06-20',7),
+    -> (104,1002,'2026-06-20',5),
+    -> (105,1003,'2026-06-20',8),
+    -> (106,1003,'2026-06-20',6),
+    -> (107,1004,'2026-06-20',8),
+    -> (108,1004,'2026-06-20',7),
+    -> (109,1005,'2026-06-20',8),
+    -> (110,1005,'2026-06-20',6);
+Query OK, 10 rows affected (0.01 sec)
+Records: 10  Duplicates: 0  Warnings: 0
+
+mysql> drop view if exists female_manager_projects;
+Query OK, 0 rows affected (0.01 sec)
+
+============================================================
+Exercise 7.27
+============================================================
+
+mysql> CREATE VIEW female_manager_projects AS
+    -> SELECT
+    ->     P.projectNo,
+    ->     P.projectName,
+    ->     D.deptNo,
+    ->     D.deptName,
+    ->     E.empNo AS ManagerID,
+    ->     E.fName,
+    ->     E.lName
+    -> FROM project P
+    -> JOIN department D
+    ->     ON P.deptNo = D.deptNo
+    -> JOIN employee E
+    ->     ON D.mgrEmpNo = E.empNo
+    -> WHERE E.sex = 'F'
+    -> ORDER BY P.projectNo;
+Query OK, 0 rows affected (0.01 sec)
+
+mysql> select * from female_manager_project;
+ERROR 1146 (42S02): Table 'projectdb.female_manager_project' doesn't exist
+mysql> select * from female_manager_projects;
++-----------+-----------------------------+--------+------------------------+-----------+--------+---------+
+| projectNo | projectName                 | deptNo | deptName               | ManagerID | fName  | lName   |
++-----------+-----------------------------+--------+------------------------+-----------+--------+---------+
+|      1001 | Student Portal              |      1 | Information Technology |       101 | Mary   | Mensah  |
+|      1002 | Payroll System              |      2 | Finance                |       103 | Linda  | Boateng |
+|      1003 | Recruitment System          |      3 | Human Resources        |       105 | Grace  | Asante  |
+|      1004 | Digital Marketing Platform  |      4 | Marketing              |       107 | Sarah  | Antwi   |
+|      1005 | Inventory Management System |      5 | Operations             |       109 | Esther | Nyarko  |
++-----------+-----------------------------+--------+------------------------+-----------+--------+---------+
+5 rows in set (0.00 sec)
+
+mysql> show tables;
++-------------------------+
+| Tables_in_projectdb     |
++-------------------------+
+| department              |
+| employee                |
+| female_manager_projects |
+| project                 |
+| workon                  |
++-------------------------+
+5 rows in set (0.00 sec)
+
+mysql> describe employee;
++----------+--------------+------+-----+---------+-------+
+| Field    | Type         | Null | Key | Default | Extra |
++----------+--------------+------+-----+---------+-------+
+| empno    | int          | NO   | PRI | NULL    |       |
+| fname    | varchar(30)  | NO   |     | NULL    |       |
+| lname    | varchar(30)  | NO   |     | NULL    |       |
+| address  | varchar(100) | YES  |     | NULL    |       |
+| dob      | date         | YES  |     | NULL    |       |
+| sex      | char(1)      | YES  |     | NULL    |       |
+| position | varchar(30)  | YES  |     | NULL    |       |
+| deptno   | int          | YES  | MUL | NULL    |       |
++----------+--------------+------+-----+---------+-------+
+8 rows in set (0.00 sec)
+
+mysql> describe Department;
++----------+-------------+------+-----+---------+-------+
+| Field    | Type        | Null | Key | Default | Extra |
++----------+-------------+------+-----+---------+-------+
+| deptNo   | int         | NO   | PRI | NULL    |       |
+| deptName | varchar(50) | NO   |     | NULL    |       |
+| mgrEmpNo | int         | YES  | MUL | NULL    |       |
++----------+-------------+------+-----+---------+-------+
+3 rows in set (0.00 sec)
+
+mysql> select * from department;
++--------+------------------------+----------+
+| deptNo | deptName               | mgrEmpNo |
++--------+------------------------+----------+
+|      1 | Information Technology |      101 |
+|      2 | Finance                |      103 |
+|      3 | Human Resources        |      105 |
+|      4 | Marketing              |      107 |
+|      5 | Operations             |      109 |
++--------+------------------------+----------+
+5 rows in set (0.00 sec)
+
+mysql> select * from employee;
++-------+---------+---------+------------+------------+------+--------------------+--------+
+| empno | fname   | lname   | address    | dob        | sex  | position           | deptno |
++-------+---------+---------+------------+------------+------+--------------------+--------+
+|   101 | Mary    | Mensah  | Accra      | 1990-03-15 | F    | Manager            |      1 |
+|   102 | John    | Doe     | Kumasi     | 1992-07-20 | M    | Analyst            |      1 |
+|   103 | Linda   | Boateng | Takoradi   | 1989-05-18 | F    | Manager            |      2 |
+|   104 | Peter   | Owusu   | Cape Coast | 1993-08-12 | M    | Team Leader        |      2 |
+|   105 | Grace   | Asante  | Sunyani    | 1991-01-30 | F    | Manager            |      3 |
+|   106 | Michael | Amoah   | Tamale     | 1994-04-22 | M    | Software Developer |      3 |
+|   107 | Sarah   | Antwi   | Ho         | 1990-12-01 | F    | Manager            |      4 |
+|   108 | David   | Mensah  | Koforidua  | 1995-07-10 | M    | Analyst            |      4 |
+|   109 | Esther  | Nyarko  | Wa         | 1988-09-14 | F    | Manager            |      5 |
+|   110 | Daniel  | Boadu   | Bolgatanga | 1996-02-05 | M    | Software Developer |      5 |
++-------+---------+---------+------------+------------+------+--------------------+--------+
+10 rows in set (0.00 sec)
+
+mysql> select * from project;
++-----------+-----------------------------+--------+
+| projectNo | projectName                 | deptNo |
++-----------+-----------------------------+--------+
+|      1001 | Student Portal              |      1 |
+|      1002 | Payroll System              |      2 |
+|      1003 | Recruitment System          |      3 |
+|      1004 | Digital Marketing Platform  |      4 |
+|      1005 | Inventory Management System |      5 |
++-----------+-----------------------------+--------+
+5 rows in set (0.00 sec)
+
+mysql> select * from workon;
++-------+-----------+------------+------------+
+| empno | projectNo | dateWorked | hourWorked |
++-------+-----------+------------+------------+
+|   101 |      1001 | 2026-06-20 |          8 |
+|   102 |      1001 | 2026-06-20 |          6 |
+|   103 |      1002 | 2026-06-20 |          7 |
+|   104 |      1002 | 2026-06-20 |          5 |
+|   105 |      1003 | 2026-06-20 |          8 |
+|   106 |      1003 | 2026-06-20 |          6 |
+|   107 |      1004 | 2026-06-20 |          8 |
+|   108 |      1004 | 2026-06-20 |          7 |
+|   109 |      1005 | 2026-06-20 |          8 |
+|   110 |      1005 | 2026-06-20 |          6 |
++-------+-----------+------------+------------+
+10 rows in set (0.00 sec)
+
+mysql> create view employee_Project_Work as select
+    -> E.empno,
+    -> F.fName,\c
+mysql> create view employee_Project_Work as select
+    -> E.empNo,
+    -> F.fName,
+    -> E.lName,
+    -> P.projectName,
+    -> W.hourWorked
+    -> from Employee E join WorkOn W
+    -> on E.empNo = W.empNo
+    -> join Project P
+    -> on W.projectNo = P.projectNo;
+ERROR 1054 (42S22): Unknown column 'F.fName' in 'field list'
+mysql> create view employee_project_work as
+    -> select
+    ->     E.empNo,
+    ->     E.fName,
+    ->     E.lName,
+    ->     P.projectName,
+    ->     W.hourWorked
+    -> from employee E
+    -> join workOn W
+    ->     on E.empNo = W.empNo
+    -> join project P
+    ->     on W.projectNo = P.projectNo;
+Query OK, 0 rows affected (0.01 sec)
+
+mysql> select * from employee_project_work;
++-------+---------+---------+-----------------------------+------------+
+| empNo | fName   | lName   | projectName                 | hourWorked |
++-------+---------+---------+-----------------------------+------------+
+|   101 | Mary    | Mensah  | Student Portal              |          8 |
+|   102 | John    | Doe     | Student Portal              |          6 |
+|   103 | Linda   | Boateng | Payroll System              |          7 |
+|   104 | Peter   | Owusu   | Payroll System              |          5 |
+|   105 | Grace   | Asante  | Recruitment System          |          8 |
+|   106 | Michael | Amoah   | Recruitment System          |          6 |
+|   107 | Sarah   | Antwi   | Digital Marketing Platform  |          8 |
+|   108 | David   | Mensah  | Digital Marketing Platform  |          7 |
+|   109 | Esther  | Nyarko  | Inventory Management System |          8 |
+|   110 | Daniel  | Boadu   | Inventory Management System |          6 |
++-------+---------+---------+-----------------------------+------------+
+10 rows in set (0.00 sec)
+
+mysql> create view EmpProject(empNo, projNo, totalHours)
+    -> as select w.empNo, w.projNo, sum(hoursWorked)
+    -> ...
+    -> \c
+mysql> create view emproject (empNo, projNo, totalHours) as
+    -> select w.empNo, w.projNo, sum(w.hourWorked) from workon w group by w.empNo, w,projNo;
+ERROR 1054 (42S22): Unknown column 'w.projNo' in 'field list'
+mysql> create view emproject (empNo, projectNo, totalHours) as
+    -> select
+    ->     w.empNo,
+    ->     w.projectNo,
+    ->     sum(w.hourWorked)
+    -> from workOn w
+    -> group by
+    ->     w.empNo,
+    ->     w.projectNo;
+Query OK, 0 rows affected (0.01 sec)
+
+mysql> show full tables where table_type = 'view';
+Empty set (0.00 sec)
+
+mysql> show create view emproject;
++-----------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+----------------------+----------------------+
+| View      | Create View                                                                                                                                                                                                                                                                                        | character_set_client | collation_connection |
++-----------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+----------------------+----------------------+
+| emproject | CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `emproject` (`empNo`,`projectNo`,`totalHours`) AS select `w`.`empno` AS `empNo`,`w`.`projectNo` AS `projectNo`,sum(`w`.`hourWorked`) AS `sum(w.hourWorked)` from `workon` `w` group by `w`.`empno`,`w`.`projectNo` | utf8mb4              | utf8mb4_0900_ai_ci   |
++-----------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+----------------------+----------------------+
+1 row in set (0.00 sec)
+
+mysql> show full tables;
++-------------------------+------------+
+| Tables_in_projectdb     | Table_type |
++-------------------------+------------+
+| department              | BASE TABLE |
+| employee                | BASE TABLE |
+| employee_project_work   | VIEW       |
+| emproject               | VIEW       |
+| female_manager_projects | VIEW       |
+| project                 | BASE TABLE |
+| workon                  | BASE TABLE |
++-------------------------+------------+
+7 rows in set (0.00 sec)
+
+mysql> CREATE VIEW Employee_Project_Work AS
+    -> SELECT
+    ->     E.empNo,
+    ->     E.fName,
+    ->     E.lName,
+    ->     P.projectName,
+    ->     W.hourWorked
+    -> FROM Employee E
+    -> JOIN WorkOn W
+    ->     ON E.empNo = W.empNo
+    -> JOIN Project P
+    ->     ON W.projectNo = P.projectNo;
+ERROR 1050 (42S01): Table 'Employee_Project_Work' already exists
+mysql> SHOW FULL TABLES
+    -> WHERE Tables_in_projectdb = 'employee_project_work';
++-----------------------+------------+
+| Tables_in_projectdb   | Table_type |
++-----------------------+------------+
+| employee_project_work | VIEW       |
++-----------------------+------------+
+1 row in set (0.00 sec)
+
+mysql> CREATE VIEW EmpProject AS
+    -> SELECT
+    ->     W.empNo,
+    ->     W.projectNo,
+    ->     SUM(W.hourWorked) AS totalHours
+    -> FROM Employee E
+    -> JOIN WorkOn W
+    ->     ON E.empNo = W.empNo
+    -> JOIN Project P
+    ->     ON P.projectNo = W.projectNo
+    -> GROUP BY W.empNo, W.projectNo;
+Query OK, 0 rows affected (0.01 sec)
+
+mysql> select * from EmProject;
++-------+-----------+------------+
+| empNo | projectNo | totalHours |
++-------+-----------+------------+
+|   101 |      1001 |          8 |
+|   102 |      1001 |          6 |
+|   103 |      1002 |          7 |
+|   104 |      1002 |          5 |
+|   105 |      1003 |          8 |
+|   106 |      1003 |          6 |
+|   107 |      1004 |          8 |
+|   108 |      1004 |          7 |
+|   109 |      1005 |          8 |
+|   110 |      1005 |          6 |
++-------+-----------+------------+
+10 rows in set (0.00 sec)
+
+mysql> select * from projectNo
+    -> fr\c
+mysql> select projectNo
+    -> from EmProject where projectNo = 1001;
++-----------+
+| projectNo |
++-----------+
+|      1001 |
+|      1001 |
++-----------+
+2 rows in set (0.00 sec)
+
+mysql> select count(projectNo)
+    -> from EmProject
+    -> where empNo = 101;
++------------------+
+| count(projectNo) |
++------------------+
+|                1 |
++------------------+
+1 row in set (0.00 sec)
+
+mysql> select empNo, totalHours
+    -> from EmProject
+    -> group by empNo;
+ERROR 1055 (42000): Expression #2 of SELECT list is not in GROUP BY clause and contains nonaggregated column 'projectdb.EmProject.totalHours' which is not functionally dependent on columns in GROUP BY clause; this is incompatible with sql_mode=only_full_group_by
+mysql> select empNo,
+    -> sum(totalHours) as totalHours
+    -> from EmProject
+    -> group by empNo;
++-------+------------+
+| empNo | totalHours |
++-------+------------+
+|   101 |          8 |
+|   102 |          6 |
+|   103 |          7 |
+|   104 |          5 |
+|   105 |          8 |
+|   106 |          6 |
+|   107 |          8 |
+|   108 |          7 |
+|   109 |          8 |
+|   110 |          6 |
++-------+------------+
+10 rows in set (0.00 sec)
+
+mysql> show databases;
++--------------------+
+| Database           |
++--------------------+
+| companydb          |
+| contact_db         |
+| contacts_db        |
+| customer_db        |
+| elitevideo         |
+| information_schema |
+| ministryfinancess  |
+| mysql              |
+| nilehub            |
+| niletech           |
+| niletech_hub       |
+| performance_schema |
+| projectdb          |
+| ra_practice        |
+| sys                |
++--------------------+
+15 rows in set (0.01 sec)
+
+mysql> select database();
++------------+
+| database() |
++------------+
+| projectdb  |
++------------+
+1 row in set (0.00 sec)
+
+mysql> 
+
+============================================================
+Exercise 7.28
+============================================================
+
+The materialized view ExpensiveParts stores the part numbers of all parts with a cost greater than £1000. Since the data is stored physically, the view must be updated whenever changes are made to the Part table to ensure it remains accurate.
+
+If a new part is inserted and its cost is more than £1000, its part number should be added to the materialized view. If an existing part's cost is updated from £1000 or less to above £1000, the part number should also be added. If the cost is reduced to £1000 or below, the part number should be removed from the view, but only if there are no other contracts for the same part with a cost greater than £1000. Likewise, if a record is deleted, the system should check whether another record for the same part still satisfies the condition before removing it from the view.
+
+The view can be maintained without accessing the Part table in simple cases, such as when a new expensive part is inserted because the system already knows that the new record qualifies for the view. However, when a part is updated or deleted, the Part table may need to be checked to determine whether another contract for the same part still has a cost greater than £1000. This ensures that only eligible part numbers remain in the materialized view.
